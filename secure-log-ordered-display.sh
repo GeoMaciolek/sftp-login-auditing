@@ -4,7 +4,7 @@
 # Finds the last login times (within reason) of SFTP users
 #
 
-SearchDir="$HOME/logtemp" #"/var/log"  # this is where we look for the file(s)
+SearchDir="$HOME/logtemp/short" #"/var/log"  # this is where we look for the file(s)
 fNamePattern='secure*' # Filenames to look for
 searchPattern='session opened for user [pP][kK][0-9]' # Search for lines containing this
 excludePattern="We Aren't Using This But Don't Leave It Empty" # What to exclude
@@ -30,39 +30,31 @@ while read -r line; do
     if [ $? -eq 0 ]; then
       MatchLine="$logline"
       
-      echo "MATCH: $logline"
+#      echo "MATCH: $logline"
       # Set up the actual logging line (not done yet)
       # Will involve checking file date year vs month names - yikes
       # if [[ $Month whjateversdjklfhasdjkl;fhsdf
       formattedLogLine=$logline
       echo "$formattedLogLine" >> "$LogTempFile"
 #    else
-      #
-      #
-      #
-      #
-      #
-      #
-      #
-      #
 #       echo "X: $logline"
     fi
   done < "$FileName"
 
 
 done <<< "$FileList"
-exit
+#exit
 
 UserlistTempFile=$(mktemp)
 lslogins -o USER|grep -E '^pk[0-9]' > "$UserlistTempFile"
-
-awk 'FNR==NR{ user[$1]; next } $4 in user { lastline[$4] = $0 } END { for (u in lastline) print u": "lastline[u]}' "$UserlistTempFile" "$LogTempFile"
-
-
+Column=11 #This is the position in the log that contains the actual username - space delimited
+awk 'FNR==NR{ user[$1]; next } $'$Column' in user { lastline[$'$Column'] = $0 } END { for (u in lastline) print u": "lastline[u]}' "$UserlistTempFile" "$LogTempFile"
 
 
 
-rm "$UserlistTempFile" "$LogTempFile"
+
+
+#rm "$UserlistTempFile" "$LogTempFile"
 
 if [ 0 -eq 3 ]; then
  echo "
