@@ -27,12 +27,25 @@ while read -r line; do
     grep -q "$searchPattern" <<< "$logline"
     if [ $? -eq 0 ]; then
       MatchLine="$logline"
-      
 #      echo "MATCH: $logline"
-      # Set up the actual logging line (not done yet)
-      # Will involve checking file date year vs month names - yikes
-      # if [[ $Month whjateversdjklfhasdjkl;fhsdf
-      formattedLogLine=$logline
+      # Clean the log line to enable reading - only get the "text" month, day, time, and the login user
+      cleanLogLine=$(echo "$logline"| cut -d' ' -f1,2,3,11)
+      read LineMonTxt LineDay LineTime LineUser <<< "$logline" # Extract the date/time from the line
+      LineMon=$(date -d "$LineMonTxt 01" "+%m") # Convert the three letter month to a leading-zero number
+
+#      LineMonth=$(echo "$logline"|cut -d' ' -f1)
+      # If the file is 'early' in the year, and the log line 'Late' month, we may need to fix the year info by subtracting
+      if [[ ($FileMonth -lt 5) && ($LineMon -gt 7) ]]; then   # one from Year (as the file in Jan may have lines from Dec, etc)
+         LineYear=$(($FileYear - 1))
+      else
+         LineYear=$FileYear
+      fi
+      formattedLogLine="${LineYear}-${LineMon}-${LineDay} $LineTime $LineUser"
+
+       # LogLine looks like: Jan 20 11:48:59 storage01 sshd[1891]: pam_unix(sshd:session): session opened for user pk11328 by (uid=0)
+
+#      formattedLogLine=$logline
+#      echo "$formattedLogLine"
       echo "$formattedLogLine" >> "$LogTempFile"
 #    else
 #       echo "X: $logline"
@@ -45,14 +58,14 @@ done <<< "$FileList"
 
 UserlistTempFile=$(mktemp)
 lslogins -o USER|grep -E '^pk[0-9]' > "$UserlistTempFile"
-Column=11 #This is the position in the log that contains the actual username - space delimited
+Column=2 #This is the position in the log that contains the actual username - space delimited
 awk 'FNR==NR{ user[$1]; next } $'$Column' in user { lastline[$'$Column'] = $0 } END { for (u in lastline) print u": "lastline[u]}' "$UserlistTempFile" "$LogTempFile"
 
 
 
 
 
-#rm "$UserlistTempFile" "$LogTempFile"
+rm "$UserlistTempFile" "$LogTempFile"
 
 if [ 0 -eq 3 ]; then
  echo "
