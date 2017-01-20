@@ -20,12 +20,10 @@ while read -r line; do
   FileName=$(echo "$line"|cut -f2 -d' ')
   FileYear=$(echo "$line"|cut -f1 -d'-')
   FileMonth=$(echo "$line"|cut -f2 -d'-')
-  echo "The YEAR is $Date amd the FILE is $FileName in month $FileMonth"
-  echo "XX__${line}__XX"
+  echo "The file YEAR is $FileYear and the FILE is $FileName in month $FileMonth Line is: ${line}"
 
    #grep -E "$searchPattern" "$FileName"| grep -vE "$excludePattern")
   while IFS= read -r logline; do
-    # echo "XXX $logline XXX"
     grep -q "$searchPattern" <<< "$logline"
     if [ $? -eq 0 ]; then
       MatchLine="$logline"
