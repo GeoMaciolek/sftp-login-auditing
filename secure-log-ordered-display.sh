@@ -15,7 +15,7 @@ debugLogging=false # set to "true" or "false" without quotes.  Note that this li
 #### Begin Script ####
 
 LogTempFile=$(mktemp)
-FileList=$(find "$SearchDir" -type f -name "$fNamePattern" -printf '%TY-%Tm-%Td %p\n'|sort)
+FileList=$(find "$SearchDir" -type f -name "$fNamePattern" -printf '%TY-%Tm-%Td %p\n'|sort) #Prepends the date to filenames and sorts them
 
 if $debugLogging; then echo "File list: $FileList"; fi 
 
@@ -26,10 +26,12 @@ while read -r currentFile; do
   FileMonth=$(echo "$currentFile"|cut -f2 -d'-')
   if $debugLogging ; then echo "File Timestamp: ${FileYear}-${FileMonth} FileName: $FileName Line is: ${currentFile}"; fi
 
-   #grep -E "$searchPattern" "$FileName"| grep -vE "$excludePattern")
+  innerLogTemp=$(mktemp)
+  if $debugLogging ; then echo 'grep -E "'"$searchPattern"'" "'"$FileName"'"| grep -vE "'"$excludePattern"'">"'"$innerLogTemp"'"'; fi
+  grep -E "$searchPattern" "$FileName"| grep -vE "$excludePattern">"$innerLogTemp" # Get rid of the non-matching lines, stop spawning a billion "grep" instances.
   while IFS= read -r logline; do
-    grep -q "$searchPattern" <<< "$logline"
-    if [ $? -eq 0 ]; then
+#    grep -q "$searchPattern" <<< "$logline"
+#    if [ $? -eq 0 ]; then
       MatchLine="$logline"
 #      echo "MATCH: $logline"
       # Clean the log line to enable reading - only get the "text" month, day, time, and the login user
@@ -53,11 +55,11 @@ while read -r currentFile; do
 #      formattedLogLine=$logline
 #      echo "$formattedLogLine XX $logline"
       echo "$formattedLogLine" >> "$LogTempFile"
-#    else
-#       echo "X: $logline"
-    fi
-  done < "$FileName"
-
+##    else
+##       echo "X: $logline"
+#    fi
+  done < "$innerLogTemp" #"$FileName"
+  rm "$innerLogTemp"
 
 done <<< "$FileList"
 #exit
